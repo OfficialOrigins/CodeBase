@@ -1,48 +1,111 @@
 //package org.firstinspires.ftc.teamcode.subsystems;
 //
-//import com.bylazar.lights.Headlight;
+//import com.qualcomm.hardware.limelightvision.LLResultTypes;
+//import com.qualcomm.hardware.limelightvision.Limelight3A;
+//import com.qualcomm.robotcore.hardware.DcMotor;
+//import com.qualcomm.robotcore.hardware.DcMotorEx;
+//import com.qualcomm.robotcore.hardware.DcMotorSimple;
 //import com.qualcomm.robotcore.hardware.HardwareMap;
-//import com.qualcomm.robotcore.hardware.Servo;
 //import com.seattlesolvers.solverslib.command.SubsystemBase;
-//import com.seattlesolvers.solverslib.controller.PIDFController;
 //import com.seattlesolvers.solverslib.hardware.ServoEx;
-//import com.seattlesolvers.solverslib.hardware.motors.Motor;
-//import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 //
+//import org.firstinspires.ftc.robotcore.external.Telemetry;
 //import org.firstinspires.ftc.teamcode.constants.ShooterConstants;
+//
+//import java.util.List;
 //
 //public class Shooter extends SubsystemBase {
 //    private ServoEx hoodServo;
-//    private MotorEx shooterMotor;
 //
-//    public enum SystemState {
-//        IDLE,
-//        RUNNING,
-//        EXHAUSTING
+//    // Replaced MotorEx → DcMotorEx
+//    private DcMotorEx shooterMotor;
+//
+//    private Limelight3A Cam;
+//    private Telemetry telemetry;
+//
+//    private double currentVelocity;
+//    private double targetVelocity;
+//    public boolean flyWheelOn;
+//
+//    private List<LLResultTypes.FiducialResult> tagList;
+//
+//    public Shooter(HardwareMap hmap, Telemetry telemetry) {
+//        this.telemetry = telemetry;
+//
+//        hoodServo = new ServoEx(hmap, ShooterConstants.hoodServoID);
+//
+//        shooterMotor = hmap.get(DcMotorEx.class, ShooterConstants.shooterMotorID);
+//
+//        Cam = hmap.get(Limelight3A.class, "limelight");
+//
+//        shooterMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+//        shooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+//        shooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+//
+//        // Apply PIDF coefficients
+//        shooterMotor.setVelocityPIDFCoefficients(
+//                ShooterConstants.kp,
+//                ShooterConstants.ki,
+//                ShooterConstants.kd,
+//                ShooterConstants.kf
+//        );
+//
+//        tagList = Cam.getLatestResult().getFiducialResults();
 //    }
 //
-//    public enum WantedState {
-//        IDLE,
-//        RUNNING,
-//        EXHAUSTING
-//    }
+//    public double getDistance()
 //
-//    private WantedState wantedState = WantedState.IDLE;
-//    private SystemState systemState = SystemState.IDLE;
+//    @Override
+//    public void periodic() {
 //
-//    private PIDFController controller;
-//
-//    private static Shooter instance;
-//    public static synchronized Shooter getInstance(HardwareMap hMap) {
-//        if(instance == null) {
-//            instance = new Shooter(hMap);
+//        if (flyWheelOn) {
+//            shooterMotor.setVelocity(targetVelocity);
+//        } else {
+//            shooterMotor.setVelocity(0);
 //        }
 //
-//        return instance;
+//        currentVelocity = getVelocity();
+//
+//        telemetry.addData("Motor Velocity Raw:", getMotorVelocity());
+//        telemetry.addData("Encoder Velocity:", getVelocity());
+//        telemetry.addData("Target Velocity:", targetVelocity);
+//        telemetry.addData("Current Velocity:", currentVelocity);
 //    }
 //
-//    private Shooter(HardwareMap hardwareMap) {
-//        shooterMotor = new MotorEx(hardwareMap, ShooterConstants.shooterMotorID, Motor.GoBILDA.BARE);
-//        controller = new PIDFController(0.01, 0, 0.0, 0.0);
+//    public double getVelocity() {
+//        return shooterMotor.getVelocity(); // Encoder-based velocity
+//    }
+//
+//    public double getMotorVelocity() {
+//        return shooterMotor.getVelocity(); // Same but direct
+//    }
+//
+//    public void setMax() {
+//        shooterMotor.setPower(1);
+//    }
+//
+//    public void stop() {
+//        shooterMotor.setPower(0);
+//    }
+//
+//    public void shootClose() {
+//        targetVelocity = ShooterConstants.shootClose;
+//    }
+//
+//    public void shootMid() {
+//        targetVelocity = ShooterConstants.shootMid;
+//    }
+//
+//    public void shootFar() {
+//        targetVelocity = ShooterConstants.ShootFar;
+//    }
+//
+//    public void spinWheelBack() {
+//        shooterMotor.setPower(0.2);
+//    }
+//
+//    //Servo Positions
+//    public void setHoodInit() {
+//
 //    }
 //}

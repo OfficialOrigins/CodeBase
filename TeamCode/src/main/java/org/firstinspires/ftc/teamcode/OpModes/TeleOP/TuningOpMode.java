@@ -20,6 +20,13 @@ import org.firstinspires.ftc.teamcode.subsystems.Drivetrain;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.servoTransfer;
 
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLStatus;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+
+
 import com.pedropathing.follower.Follower;
 
 
@@ -29,6 +36,10 @@ public class TuningOpMode extends OpMode {
     private Drivetrain dt;
     private Intake intake;
     private servoTransfer transfer;
+    private Limelight3A limelight;
+
+    private double tx;
+    private double ty;
 
 
     private DcMotor turretMotor;
@@ -70,18 +81,49 @@ public class TuningOpMode extends OpMode {
 
         shooterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         shooterMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.pipelineSwitch(20);
     }
 
     @Override
     public void start() {
         follower.startTeleopDrive(true);
-        follower.setMaxPower(0.55);
+        follower.setMaxPower(0.70);
 //        dt.enableTeleop();
 //        dt.follower.setMaxPower(0.70);
+        limelight.start();
     }
 
     @Override
     public void loop() {
+
+        LLStatus status = limelight.getStatus();
+        telemetry.addData("Name", "%s",
+                status.getName());
+        telemetry.addData("LL", "Temp: %.1fC, CPU: %.1f%%, FPS: %d",
+                status.getTemp(), status.getCpu(), (int) status.getFps());
+        telemetry.addData("Pipeline", "Index: %d, Type: %s",
+                status.getPipelineIndex(), status.getPipelineType());
+
+        LLResult result = limelight.getLatestResult();
+        if (result != null && result.isValid()) {
+             tx = result.getTx(); // How far left or right the target is (degrees)
+             ty = result.getTy(); // How far up or down the target is (degrees)
+
+            telemetry.addData("Target X", tx);
+            telemetry.addData("Target Y", ty);
+        } else {
+            telemetry.addData("Limelight", "No Targets");
+        }
+
+        if (tx > 5) {
+            turretMotor.setPower(0.30);
+        } else if (tx < -5) {
+            turretMotor.setPower(-0.30);
+        } else {
+            turretMotor.setPower(0);
+        }
+
         follower.update();
         follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
         aPeriodic();
@@ -111,39 +153,35 @@ public class TuningOpMode extends OpMode {
             shooterMotor.setPower(0);
         }
 
-        if(Driver1.getButton(GamepadKeys.Button.Y)) {
-            turretMotor.setPower(0.50);
-        }
-
-        else if (Driver1.getButton(GamepadKeys.Button.X)) {
-            turretMotor.setPower(-0.50);
-        }
-
-        else {
-            turretMotor.setPower(0);
-        }
+//        if(Driver1.getButton(GamepadKeys.Button.Y)) {
+//            turretMotor.setPower(0.50);
+//        }
+//
+//        else if (Driver1.getButton(GamepadKeys.Button.X)) {
+//            turretMotor.setPower(-0.50);
+//        }
+//
+//        else {
+//            turretMotor.setPower(0);
+//        }
 
         if(Driver1.getButton(GamepadKeys.Button.RIGHT_BUMPER)) {
             hoodServo.setPosition(0);
         }
 
         if(Driver1.getButton(GamepadKeys.Button.LEFT_BUMPER)) {
-            hoodServo.setPosition(0.60);
+            hoodServo.setPosition(0.55);
         }
 
-        if(Driver2.gamepad.a) {
-            transfer.closeGate();
+        if(Driver1.getButton(GamepadKeys.Button.DPAD_DOWN)) {
+            hoodServo.setPosition(0.25);
         }
 
-        if(Driver2.gamepad.b) {
-            transfer.openGate();
-        }
-
-        if (Driver2.gamepad.dpad_up) {
+        if(Driver1.isDown(GamepadKeys.Button.DPAD_UP)) {
             transfer.extendPitch();
         }
 
-        if (Driver2.gamepad.dpad_down) {
+        else {
             transfer.retractPitch();
         }
 
