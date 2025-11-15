@@ -54,6 +54,15 @@ public class Turret extends SubsystemBase {
 
     private double tx;
     private boolean hasTarget;
+    
+    // Getters for telemetry
+    public double getTx() {
+        return tx;
+    }
+    
+    public boolean hasTarget() {
+        return hasTarget;
+    }
 
     // Encoder constants for GoBilda 312 RPM motor with 36:174 gear ratio
     // Motor encoder: 537.7 CPR at motor output
