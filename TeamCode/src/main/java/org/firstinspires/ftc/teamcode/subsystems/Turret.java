@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
@@ -13,6 +15,7 @@ import org.firstinspires.ftc.teamcode.constants.TurretConstants;
 public class Turret extends SubsystemBase {
     private DcMotorEx turretMotor;
     private DigitalChannel leftHomingSwitch;
+    private Limelight3A limelight;
 
     public enum SystemState {
         IDLE,
@@ -64,6 +67,10 @@ public class Turret extends SubsystemBase {
         turretMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         turretMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+        // Initialize Limelight 3A for AprilTag tracking
+        limelight = hMap.get(Limelight3A.class, "limelight");
+        limelight.pipelineSwitch(20); // AprilTag pipeline (configured for green box detection)
+
         // Initialize PID controller with values from TurretConstants (tunable via FTC Dashboard)
         positionController = new PIDFController(
             TurretConstants.kp,
@@ -72,6 +79,21 @@ public class Turret extends SubsystemBase {
             TurretConstants.kf
         );
         frictionController = new SimpleMotorFeedforward(0, 0, 0);
+    }
+
+    /**
+     * Starts the Limelight polling for data
+     * Must be called before periodic() can read Limelight data
+     */
+    public void startLimelight() {
+        limelight.start();
+    }
+
+    /**
+     * Stops the Limelight polling
+     */
+    public void stopLimelight() {
+        limelight.stop();
     }
 
     @Override
@@ -84,8 +106,29 @@ public class Turret extends SubsystemBase {
             TurretConstants.kf
         );
 
+        // Read Limelight data for AprilTag tracking
+        updateLimelightData();
+
         systemState = handleTransition();
         applyStates();
+    }
+
+    /**
+     * Updates turret with latest Limelight data for AprilTag tracking
+     * Reads tx (horizontal offset) from Limelight for PID control
+     */
+    private void updateLimelightData() {
+        LLResult result = limelight.getLatestResult();
+        if (result != null && result.isValid()) {
+            // Get horizontal offset (tx) for AprilTag tracking
+            // tx is in degrees: positive = target is to the right, negative = target is to the left
+            tx = result.getTx();
+            hasTarget = true;
+        } else {
+            // No target detected
+            tx = 0;
+            hasTarget = false;
+        }
     }
 
     private SystemState handleTransition() {
