@@ -1,7 +1,10 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+
+import java.util.List;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
@@ -116,14 +119,25 @@ public class Turret extends SubsystemBase {
     /**
      * Updates turret with latest Limelight data for AprilTag tracking
      * Reads tx (horizontal offset) from Limelight for PID control
+     * Checks for fiducial (AprilTag) results to ensure we're tracking AprilTags
      */
     private void updateLimelightData() {
         LLResult result = limelight.getLatestResult();
         if (result != null && result.isValid()) {
-            // Get horizontal offset (tx) for AprilTag tracking
-            // tx is in degrees: positive = target is to the right, negative = target is to the left
-            tx = result.getTx();
-            hasTarget = true;
+            // Check for AprilTag (fiducial) results first
+            List<LLResultTypes.FiducialResult> fiducialResults = result.getFiducialResults();
+            
+            if (!fiducialResults.isEmpty()) {
+                // AprilTag detected - use tx from the first detected AprilTag
+                // tx is in degrees: positive = target is to the right, negative = target is to the left
+                tx = result.getTx();
+                hasTarget = true;
+            } else {
+                // Fallback: use general tx if no fiducial results but result is valid
+                // This handles cases where pipeline might be configured differently
+                tx = result.getTx();
+                hasTarget = (Math.abs(tx) > 0.1); // Only consider it a target if tx is significant
+            }
         } else {
             // No target detected
             tx = 0;
