@@ -54,15 +54,6 @@ public class Turret extends SubsystemBase {
 
     private double tx;
     private boolean hasTarget;
-    
-    // Getters for telemetry
-    public double getTx() {
-        return tx;
-    }
-    
-    public boolean hasTarget() {
-        return hasTarget;
-    }
 
     // Encoder constants for GoBilda 312 RPM motor with 36:174 gear ratio
     // Motor encoder: 537.7 CPR at motor output
@@ -255,6 +246,10 @@ public class Turret extends SubsystemBase {
         wantedState = WantedState.TARGET_POSITION;
     }
 
+    public void stopTracking() {
+        wantedState = WantedState.IDLE;
+    }
+
     public void forceReturnToZero() {
         wantedState = WantedState.RELOCALIZING;
     }
@@ -282,5 +277,26 @@ public class Turret extends SubsystemBase {
      */
     public double getCurrentAngle() {
         return getAngle();
+    }
+
+    /**
+     * Gets the current system state
+     */
+    public SystemState getSystemState() {
+        return systemState;
+    }
+
+    /**
+     * Gets the current tx value (horizontal offset from Limelight)
+     */
+    public double getTx() {
+        return tx;
+    }
+
+    /**
+     * Gets whether a target is currently detected
+     */
+    public boolean hasTarget() {
+        return hasTarget;
     }
 }
